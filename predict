@@ -1,0 +1,31 @@
+import torch
+import cv2
+import numpy as np
+from PIL import Image
+from torchvision import transforms
+from model.model import DeepfakeModel
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+model = DeepfakeModel().to(device)
+model.load_state_dict(torch.load("deepfake_model.pth", map_location=device))
+model.eval()
+
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+])
+
+def predict(image_path):
+    image = Image.open(image_path).convert("RGB")
+    image = transform(image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        output = model(image)
+        _, predicted = torch.max(output, 1)
+
+    return "Fake" if predicted.item() == 1 else "Real"
+
+# Example
+if __name__ == "__main__":
+    print(predict("test.jpg"))
